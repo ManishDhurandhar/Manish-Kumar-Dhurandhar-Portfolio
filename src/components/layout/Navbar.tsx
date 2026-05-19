@@ -138,12 +138,20 @@ export function Navbar({ theme, toggleTheme }: { theme: string; toggleTheme: () 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            className="md:hidden mt-4 glass rounded-3xl overflow-hidden shadow-2xl relative z-50 border-white/20"
-          >
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xl z-40 md:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              className="md:hidden mt-4 glass rounded-3xl overflow-hidden shadow-2xl relative z-50 border-white/20"
+            >
             <div className="flex flex-col p-6 gap-4 relative z-50">
               {navLinks.map((link) => {
                 const isActive = activeSection === link.href.replace("#", "");
@@ -164,8 +172,9 @@ export function Navbar({ theme, toggleTheme }: { theme: string; toggleTheme: () 
               })}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
-  );
+        </>
+      )}
+    </AnimatePresence>
+  </nav>
+);
 }

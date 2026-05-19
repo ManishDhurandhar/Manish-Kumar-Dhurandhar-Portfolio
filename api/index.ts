@@ -24,22 +24,23 @@ CORE RULES:
 7. NO "Translation": Never use brackets or the word "Translation". Just start with the phrase.
 
 KNOWLEDGE BASE (ONLY use if Manish is the topic):
-- Identity: Manish Kumar Dhurandhar, 2nd-year B.Tech CSE student at SSTC (Class of 2028).
-- Stack: MERN, C/C++, Gemini AI.
-- Highlights: GDG Core Team, visited IIT Madras, 5x Gully Cricket Champion.
+- Identity: Manish Kumar Dhurandhar, 20 y/o building Full-stack web and AI solutions. 2nd-year B.Tech CSE student at SSTC (Class of 2028).
+- Highlights: Building frontend, backend, and AI-powered systems. GDG Core Team, visited IIT Madras, 5x Gully Cricket Champion.
 - Contact: manish.dhurandhar1@gmail.com.`;
 
 // Basic health check
-app.get("/api/health", (req, res) => {
+const healthHandler = (req: any, res: any) => {
   res.json({ 
     status: "ok", 
     vercel: !!process.env.VERCEL,
     env: {
       hasDb: !!process.env.MONGODB_URI,
-      hasGemini: !!process.env.GEMINI_API_KEY || !!process.env.NEXT_PUBLIC_GEMINI_API_KEY
+      hasGemini: !!(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
     }
   });
-});
+};
+app.get("/api/health", healthHandler);
+app.get("/health", healthHandler);
 
 const isProd = process.env.NODE_ENV === "production";
 const PORT = 3000;
@@ -141,7 +142,7 @@ let lastFetchTime = 0;
 const CACHE_DURATION = 3 * 60 * 1000;
 
 // API Routes
-app.get("/api/spotify/now-playing", async (req, res) => {
+app.get(["/api/spotify/now-playing", "/spotify/now-playing"], async (req, res) => {
   if (cachedNowPlaying && Date.now() - lastFetchTime < CACHE_DURATION) {
     return res.json(cachedNowPlaying);
   }
@@ -192,7 +193,7 @@ app.get("/api/spotify/now-playing", async (req, res) => {
   }
 });
 
-app.get("/api/views", async (req, res) => {
+app.get(["/api/views", "/views"], async (req, res) => {
   await connectDB();
   if (!isConnected) return res.json({ count: 1337 });
   try {
@@ -204,7 +205,7 @@ app.get("/api/views", async (req, res) => {
   }
 });
 
-app.post("/api/contact", async (req, res) => {
+app.post(["/api/contact", "/contact"], async (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).json({ error: "All fields are required" });
@@ -243,13 +244,15 @@ app.post("/api/contact", async (req, res) => {
 });
 
 // --- AI Chatbot Setup ---
-app.post("/api/chat", async (req, res) => {
+app.post(["/api/chat", "/chat"], async (req, res) => {
+  console.log("Chat request received:", req.body?.message?.substring(0, 20) + "...");
   const { message, history } = req.body;
   if (!message) return res.status(400).json({ error: "Message is required" });
 
   const apiKey = getGeminiKey();
   if (!apiKey) {
-    return res.status(200).json({ text: "I am Groot! (Translation: API Key missing. Please set GEMINI_API_KEY in settings.)" });
+    console.error("GEMINI_API_KEY is missing");
+    return res.status(200).json({ text: "I am Groot! (Translation: API Key missing. Please set GEMINI_API_KEY in your deployment environment variables.)" });
   }
 
   try {

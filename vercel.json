@@ -1,10 +1,14 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/chat", "destination": "/api/chat.ts" },
-    { "source": "/api/views", "destination": "/api/views.ts" },
-    { "source": "/api/spotify/now-playing", "destination": "/api/spotify-now-playing.ts" },
-    { "source": "/api/contact", "destination": "/api/contact.ts" },
+    { "source": "/api/(.*)", "destination": "/api/index.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/index.ts": {
+      "runtime": "vercel-node@latest",
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }

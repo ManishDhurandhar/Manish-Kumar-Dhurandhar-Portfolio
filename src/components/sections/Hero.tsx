@@ -47,7 +47,7 @@ export function Hero() {
           </h2>
           
           <p className="text-base sm:text-lg text-brand-muted max-w-lg mb-10 leading-relaxed font-medium">
-            2nd-year B.Tech CSE student at SSTC Bhilai. Passionate about AI/ML systems, fluid and high-performance web architectures.
+            20 y/o building frontend, backend, Full-stack web and AI-powered solutions. I turn concepts into clean, efficient and user-friendly digital experiences with a keen eye for design.
           </p>
 
           <div className="flex flex-wrap gap-4">
