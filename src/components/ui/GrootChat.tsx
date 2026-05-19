@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bot, X, Send, Sprout, User, Loader2 } from "lucide-react";
-import { cn } from "../../utils";
+import { cn } from "../../lib/utils";
 
 interface Message {
   role: "user" | "model";
@@ -68,11 +68,12 @@ export function GrootChat() {
       } else {
         throw new Error(data.error || "Failed to get response");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Chat Error:", err);
+      const errorMessage = err.message || "Sorry, I'm having trouble connecting right now.";
       setMessages((prev) => [
         ...prev, 
-        { role: "model", parts: [{ text: "Sorry, I'm having trouble connecting right now. Please try again later." }] }
+        { role: "model", parts: [{ text: `Error: ${errorMessage}. Please check your environment variables.` }] }
       ]);
     } finally {
       setIsLoading(false);

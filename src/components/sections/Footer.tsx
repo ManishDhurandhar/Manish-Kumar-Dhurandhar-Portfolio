@@ -6,7 +6,7 @@ import {
   Eye
 } from "lucide-react";
 import { GlassCard } from "../ui/GlassCard";
-import { cn } from "../../../utils";
+import { cn } from "../../lib/utils";
 
 const socials = [
   { name: "GitHub", href: "https://github.com/ManishDhurandhar", icon: <Github size={20} /> },
