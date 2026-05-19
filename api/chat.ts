@@ -1,6 +1,15 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const getGeminiKey = () => (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
+const getGeminiKey = () => {
+  let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+  if (!key) return "";
+  
+  key = key.trim().replace(/^['"]|['"]$/g, "").trim();
+  if (key.includes("=")) {
+    key = key.split("=").pop()?.trim() || key;
+  }
+  return key;
+};
 
 const SYSTEM_INSTRUCTION = `You are "Groot", Manish Kumar Dhurandhar's absolute best friend and AI Assistant. 
 You understand him better than any human ever could. You have a dual personality inspired by Groot from the Avengers:
@@ -59,44 +68,73 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getGeminiKey();
     if (!apiKey) {
-      return res.status(200).json({ text: "I am Groot! (Translation: API Key missing. Please set GEMINI_API_KEY in Vercel settings.)" });
+      return res.status(200).json({ 
+        text: "I am Groot! (Translation: My API Key is missing. Please add GEMINI_API_KEY to your Vercel Environment Variables and redeploy.)" 
+      });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro", // Reverting to Pro for maximum compatibility across regions
+    const ai = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
     });
 
-    // Clean history: Ensure it alternates user/model and starts with user
-    let validHistory = (history || [])
-      .filter((h: any) => h.role && h.parts && Array.isArray(h.parts) && h.parts[0]?.text)
+    // Format history according to the @google/genai SDK (which uses contents array)
+    const contents: any[] = (history || [])
+      .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
-    while (validHistory.length > 0 && validHistory[0].role !== "user") {
-      validHistory.shift();
+    // Add current message
+    contents.push({
+      role: "user",
+      parts: [{ text: String(message) }]
+    });
+
+    const generateGrootContent = async (modelName: string) => {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: contents,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+        },
+      });
+      return response.text;
+    };
+
+    let text = "";
+    try {
+      // Primary attempt with gemini-3-flash-preview
+      text = await generateGrootContent("gemini-3-flash-preview");
+    } catch (err: any) {
+      console.error("Gemini Primary Error:", err);
+      const is404 = err.message && (err.message.includes("404") || err.message.includes("not found"));
+      
+      if (is404) {
+        console.log("gemini-3-flash-preview not found, falling back to gemini-flash-latest");
+        try {
+          text = await generateGrootContent("gemini-flash-latest");
+        } catch (secondErr: any) {
+          throw secondErr;
+        }
+      } else {
+        throw err;
+      }
     }
 
-    const chat = model.startChat({ history: validHistory });
-    
-    // Inject system instructions as part of the first message context if history is empty
-    const prompt = validHistory.length === 0 
-      ? `System Instructions: ${SYSTEM_INSTRUCTION}\n\nUser Question: ${message}`
-      : message;
+    if (!text) throw new Error("Empty response from Gemini");
 
-    const result = await chat.sendMessage(prompt);
-    const text = (await result.response).text();
-
-    if (!text) throw new Error("Empty response");
     res.status(200).json({ text });
-
   } catch (err: any) {
-    console.error("Gemini Error:", err);
+    console.error("Gemini Critical Error:", err);
     res.status(200).json({ 
-      text: `I am Groot! (Translation: Groot is taking a nap. Error: ${err.message})`,
-      error: err.message 
+      text: `I am Groot! (Translation: I hit a technical snag: ${err.message})`,
+      error: err.message
     });
   }
 }
