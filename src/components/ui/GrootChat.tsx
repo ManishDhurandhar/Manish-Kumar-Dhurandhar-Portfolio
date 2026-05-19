@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bot, X, Send, Sprout, User, Loader2 } from "lucide-react";
-import { cn } from "@/src/lib/utils";
+import { cn } from "../../utils";
 
 interface Message {
   role: "user" | "model";

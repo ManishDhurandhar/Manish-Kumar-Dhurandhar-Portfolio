@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { motion } from "motion/react";
-import { cn } from "@/src/lib/utils";
+import { cn } from "../../utils";
 
 interface GlassCardProps {
   children: ReactNode;
