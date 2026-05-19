@@ -67,33 +67,6 @@ export function Footer() {
     <footer id="contact" className="px-6 py-12 bg-background/80 backdrop-blur-3xl border-t border-foreground/5">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         
-        {/* Quote Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-20 max-w-2xl px-4"
-        >
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 1.8, delay: 0.2, ease: "easeOut" }}
-            className="text-2xl md:text-3xl font-black tracking-tight italic mb-4 leading-tight text-foreground"
-          >
-            "Trying to understand the fundamental nature of reality."
-          </motion.p>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
-            className="text-[10px] font-black tracking-[0.4em] uppercase text-accent/60"
-          >
-            — Demis Hassabis
-          </motion.p>
-          <div className="w-12 h-0.5 bg-accent/20 mx-auto mt-6 rounded-full" />
-        </motion.div>
-
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
           {/* Contact Info */}
           <div>
@@ -199,12 +172,39 @@ export function Footer() {
           </GlassCard>
         </div>
 
+        {/* Quote Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-12 max-w-2xl px-4"
+        >
+          <motion.p 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 1.8, delay: 0.2, ease: "easeOut" }}
+            className="text-2xl md:text-3xl font-black tracking-tight italic mb-4 leading-tight text-foreground"
+          >
+            "Trying to understand the fundamental nature of reality."
+          </motion.p>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
+            className="text-[10px] font-black tracking-[0.4em] uppercase text-accent/60"
+          >
+            — Demis Hassabis
+          </motion.p>
+          <div className="w-12 h-0.5 bg-accent/20 mx-auto mt-6 rounded-full" />
+        </motion.div>
+
         {/* Pro Tip Section - Centered below Form */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-20 text-center"
+          className="mb-12 text-center"
         >
           <div className="flex flex-col items-center">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2 flex items-center gap-3">
