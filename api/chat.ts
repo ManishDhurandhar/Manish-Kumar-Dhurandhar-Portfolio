@@ -56,28 +56,45 @@ export default async function handler(req: any, res: any) {
 
   const apiKey = getGeminiKey();
   if (!apiKey) {
-    return res.status(500).json({ error: "Gemini API Key is not configured." });
+    return res.status(500).json({ error: "GEMINI_API_KEY is missing in Vercel Environment Variables. Please add it and redeploy." });
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
+    // Use gemini-1.5-flash-latest for better stability on some keys
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_INSTRUCTION
     });
 
     const chat = model.startChat({
       history: (history || []).map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.parts[0].text || "" }]
+        parts: [{ text: h.parts?.[0]?.text || "" }]
       })),
+      generationConfig: {
+        maxOutputTokens: 1000,
+      }
     });
 
-    const result = await chat.sendMessage(message);
-    const text = result.response.text();
-    res.status(200).json({ text });
+    // We include the system instruction as a prepend to the first message if history is empty, 
+    // or as a continuous context reminder.
+    const prompt = history && history.length > 0 
+      ? message 
+      : `${SYSTEM_INSTRUCTION}\n\nUser: ${message}`;
+
+    const result = await chat.sendMessage(prompt);
+    const responseText = result.response.text();
+    
+    if (!responseText) throw new Error("Empty response from AI");
+    
+    res.status(200).json({ text: responseText });
   } catch (err: any) {
     console.error("Gemini Error:", err);
-    res.status(500).json({ error: "Groot is offline. Check API key and Vercel logs.", details: err.message });
+    // Return the actual error message from the SDK to help the user identify the problem
+    const detailedError = err.message || "Unknown error";
+    res.status(500).json({ 
+      error: `Groot is offline. Reason: ${detailedError}`,
+      details: detailedError
+    });
   }
 }
