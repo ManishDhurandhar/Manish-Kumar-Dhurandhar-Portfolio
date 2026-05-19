@@ -77,24 +77,27 @@ export default async function handler(req: any, res: any) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-latest",
+      systemInstruction: SYSTEM_INSTRUCTION
+    });
 
     // Validate and clean history for the SDK
-    const validHistory = (history || [])
+    let validHistory = (history || [])
       .filter((h: any) => h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
+    // CRITICAL: Gemini requires the first message in history to be from 'user'.
+    while (validHistory.length > 0 && validHistory[0].role !== "user") {
+      validHistory.shift();
+    }
+
     const chat = model.startChat({ history: validHistory });
 
-    // Prepend instructions if history is empty to set context
-    const prompt = validHistory.length === 0 
-      ? `[CONTEXT: ${SYSTEM_INSTRUCTION}]\n\nUser Question: ${message}`
-      : message;
-
-    const result = await chat.sendMessage(prompt);
+    const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
     
