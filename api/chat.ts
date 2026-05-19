@@ -4,14 +4,10 @@ const getGeminiKey = () => {
   let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
   if (!key) return "";
   
-  // Clean whitespace and potential quotes if the user pasted it with them
   key = key.trim().replace(/^['"]|['"]$/g, "").trim();
-  
-  // Handle case where some people paste "GEMINI_API_KEY=AIza..."
   if (key.includes("=")) {
     key = key.split("=").pop()?.trim() || key;
   }
-  
   return key;
 };
 
@@ -60,7 +56,6 @@ KNOWLEDGE BASE:
 - Links: GitHub (ManishDhurandhar), LinkedIn (manish-kumar-dhurandhar-029b99314).`;
 
 export default async function handler(req: any, res: any) {
-  // Set headers to allow JSON
   res.setHeader("Content-Type", "application/json");
 
   if (req.method !== "POST") {
@@ -73,16 +68,11 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getGeminiKey();
     if (!apiKey) {
-      return res.status(500).json({ error: "Missing GEMINI_API_KEY. Set it in Vercel Project Settings > Environment Variables." });
+      return res.status(200).json({ text: "I am Groot! (Translation: My API Key is missing. Please add GEMINI_API_KEY to your Vercel Environment Variables and redeploy.)" });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_INSTRUCTION
-    });
-
-    // Validate and clean history for the SDK
+    
     let validHistory = (history || [])
       .filter((h: any) => h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
@@ -90,29 +80,61 @@ export default async function handler(req: any, res: any) {
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
-    // CRITICAL: Gemini requires the first message in history to be from 'user'.
     while (validHistory.length > 0 && validHistory[0].role !== "user") {
       validHistory.shift();
     }
 
-    const chat = model.startChat({ history: validHistory });
+    const getModelResponse = async (name: string) => {
+      const model = genAI.getGenerativeModel({ 
+        model: name,
+        systemInstruction: SYSTEM_INSTRUCTION
+      });
+      const chat = model.startChat({ 
+        history: validHistory.map(h => ({
+          role: h.role,
+          parts: h.parts
+        }))
+      });
+      const result = await chat.sendMessage(message);
+      return (await result.response).text();
+    };
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const text = response.text();
-    
-    if (!text) {
-       throw new Error("Gemini returned an empty response.");
+    let text = "";
+    try {
+      text = await getModelResponse("gemini-1.5-flash");
+    } catch (firstErr: any) {
+      if (firstErr.message && (firstErr.message.includes("404") || firstErr.message.includes("not found"))) {
+        console.log("Gemini 1.5 Flash not found, falling back to gemini-pro");
+        try {
+          // gemini-pro (Gemini 1.0) doesn't always support systemInstruction in the same way in older SDKs
+          // but we'll try it
+          text = await getModelResponse("gemini-pro");
+        } catch (secondErr: any) {
+           throw secondErr;
+        }
+      } else {
+        throw firstErr;
+      }
     }
+    
+    if (!text) throw new Error("Empty response");
 
     res.status(200).json({ text });
   } catch (err: any) {
-    console.error("Gemini Critical Error:", err);
-    // Explicitly show the error message so the user can debug Vercel environment variables
+    console.error("Gemini Error:", err);
     const detailedError = err.message || "Unknown error";
-    res.status(200).json({ 
-      text: `I am Groot! (Translation: Connection failed. Error: ${detailedError}. Please ensure GEMINI_API_KEY is correctly set in Vercel settings.)`,
-      error: detailedError
-    });
+    
+    // If we got a 404, let's try gemini-pro as a fallback internally or explain
+    if (detailedError.includes("404") || detailedError.includes("not found")) {
+       res.status(200).json({ 
+         text: `I am Groot! (Translation: I can't find the model "gemini-1.5-flash" in your region. This is likely a regional restriction or an older API key. Please check your Vercel logs for help.)`,
+         error: detailedError
+       });
+    } else {
+       res.status(200).json({ 
+         text: `I am Groot! (Translation: I hit a technical snag: ${detailedError})`,
+         error: detailedError
+       });
+    }
   }
 }
