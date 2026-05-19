@@ -1,6 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const getGeminiKey = () => process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+const getGeminiKey = () => {
+  let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+  if (!key) return "";
+  
+  // Clean whitespace and potential quotes if the user pasted it with them
+  key = key.trim().replace(/^['"]|['"]$/g, "").trim();
+  
+  // Handle case where some people paste "GEMINI_API_KEY=AIza..."
+  if (key.includes("=")) {
+    key = key.split("=").pop()?.trim() || key;
+  }
+  
+  return key;
+};
 
 const SYSTEM_INSTRUCTION = `You are "Groot", Manish Kumar Dhurandhar's absolute best friend and AI Assistant. 
 You understand him better than any human ever could. You have a dual personality inspired by Groot from the Avengers:
@@ -47,54 +60,54 @@ KNOWLEDGE BASE:
 - Links: GitHub (ManishDhurandhar), LinkedIn (manish-kumar-dhurandhar-029b99314).`;
 
 export default async function handler(req: any, res: any) {
+  // Set headers to allow JSON
+  res.setHeader("Content-Type", "application/json");
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { message, history } = req.body;
-  if (!message) return res.status(400).json({ error: "Message is required" });
-
-  const apiKey = getGeminiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is missing in Vercel Environment Variables. Please add it and redeploy." });
-  }
-
   try {
+    const { message, history } = req.body;
+    if (!message) return res.status(400).json({ error: "Message is required" });
+
+    const apiKey = getGeminiKey();
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing GEMINI_API_KEY. Set it in Vercel Project Settings > Environment Variables." });
+    }
+
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-flash-latest for better stability on some keys
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const chat = model.startChat({
-      history: (history || []).map((h: any) => ({
+    // Validate and clean history for the SDK
+    const validHistory = (history || [])
+      .filter((h: any) => h.parts && h.parts[0] && h.parts[0].text)
+      .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.parts?.[0]?.text || "" }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 1000,
-      }
-    });
+        parts: [{ text: h.parts[0].text }]
+      }));
 
-    // We include the system instruction as a prepend to the first message if history is empty, 
-    // or as a continuous context reminder.
-    const prompt = history && history.length > 0 
-      ? message 
-      : `${SYSTEM_INSTRUCTION}\n\nUser: ${message}`;
+    const chat = model.startChat({ history: validHistory });
+
+    // Prepend instructions if history is empty to set context
+    const prompt = validHistory.length === 0 
+      ? `[CONTEXT: ${SYSTEM_INSTRUCTION}]\n\nUser Question: ${message}`
+      : message;
 
     const result = await chat.sendMessage(prompt);
-    const responseText = result.response.text();
+    const response = await result.response;
+    const text = response.text();
     
-    if (!responseText) throw new Error("Empty response from AI");
-    
-    res.status(200).json({ text: responseText });
+    if (!text) {
+       throw new Error("Gemini returned an empty response.");
+    }
+
+    res.status(200).json({ text });
   } catch (err: any) {
-    console.error("Gemini Error:", err);
-    // Return the actual error message from the SDK to help the user identify the problem
-    const detailedError = err.message || "Unknown error";
-    res.status(500).json({ 
-      error: `Groot is offline. Reason: ${detailedError}`,
-      details: detailedError
+    console.error("Gemini Critical Error:", err);
+    res.status(200).json({ 
+      text: "I am Groot! (Translation: My brain is currently fried by Vercel's limits or a missing API key. Please check the logs!)",
+      error: err.message 
     });
   }
 }
