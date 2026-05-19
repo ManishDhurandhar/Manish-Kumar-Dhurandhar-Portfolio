@@ -28,15 +28,15 @@ const events = [
 
 export function Experience() {
   return (
-    <section id="experience" className="px-6 py-20 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+    <section id="experience" className="px-6 py-12 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
         <div>
           <p className="text-xs font-bold tracking-[0.3em] uppercase text-brand-muted mb-2">My Journey</p>
           <h2 className="text-4xl md:text-5xl font-black tracking-tighter">Experience & Leadership</h2>
         </div>
       </div>
 
-      <div className="relative border-l-2 border-foreground/10 ml-2 sm:ml-12 pl-6 sm:pl-8 space-y-12">
+      <div className="relative border-l-2 border-foreground/10 ml-2 sm:ml-12 pl-6 sm:pl-8 space-y-6">
         {events.map((item, i) => (
           <div key={i} className="relative">
             {/* Timeline Dot */}

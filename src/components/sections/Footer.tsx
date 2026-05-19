@@ -64,7 +64,7 @@ export function Footer() {
   };
 
   return (
-    <footer id="contact" className="px-6 py-20 bg-background/80 backdrop-blur-3xl border-t border-foreground/5">
+    <footer id="contact" className="px-6 py-12 bg-background/80 backdrop-blur-3xl border-t border-foreground/5">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         
         {/* Quote Section */}
@@ -139,7 +139,7 @@ export function Footer() {
                 ))}
               </div>
               <p className="text-accent font-mono text-[10px] uppercase tracking-[0.2em]">
-                Reach Out :
+                Resume available on demand. Reach Out :
               </p>
             </div>
           </div>

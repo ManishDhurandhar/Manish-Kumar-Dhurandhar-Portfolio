@@ -21,7 +21,7 @@ export function Hero() {
   };
 
   return (
-    <section id="home" className="min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6">
+    <section id="home" className="min-h-screen flex flex-col items-center justify-center pt-32 pb-12 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <motion.div
           initial={{ opacity: 0, x: -10 }}
@@ -47,7 +47,7 @@ export function Hero() {
           </h2>
           
           <p className="text-base sm:text-lg text-brand-muted max-w-lg mb-10 leading-relaxed font-medium">
-            2nd-year B.Tech CSE student at SSTC Bhilai. Passionate about AI/ML systems and fluid, high-performance web architectures.
+            2nd-year B.Tech CSE student at SSTC Bhilai. Passionate about AI/ML systems, fluid and high-performance web architectures.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -74,11 +74,11 @@ export function Hero() {
         >
           <div className="relative group">
             <div className="absolute -inset-4 bg-gradient-to-tr from-accent/20 to-transparent blur-2xl rounded-full opacity-50 transition-opacity" />
-            <div className="w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-[3rem] overflow-hidden glass p-4 transition-transform duration-500">
+            <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-[400px] md:h-[400px] lg:w-[480px] lg:h-[480px] rounded-[3.5rem] overflow-hidden glass p-4 transition-transform duration-500">
               <img 
                 src="/input_file_1.png" 
                 alt="Manish Avatar" 
-                className="w-full h-full object-cover rounded-[2.2rem] bg-foreground/5 shadow-inner"
+                className="w-full h-full object-cover rounded-[2.8rem] bg-foreground/5 shadow-inner"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=Manish+Kumar&background=f97316&color=fff&size=512";
                 }}

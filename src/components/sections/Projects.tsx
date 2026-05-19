@@ -4,12 +4,12 @@ import { Loader2 } from "lucide-react";
 
 export function Projects() {
   return (
-    <section id="projects" className="px-6 py-20 max-w-7xl mx-auto">
-      <div className="flex flex-col items-center text-center mb-16">
+    <section id="projects" className="px-6 py-12 max-w-7xl mx-auto">
+      <div className="flex flex-col items-center text-center mb-8">
         <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-8 italic">Featured Work</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
         <GlassCard className="group overflow-hidden flex flex-col p-0 border-foreground/5 hover:border-foreground/10 transition-colors">
           <div className="relative h-64 overflow-hidden bg-foreground/5">
             <img 
@@ -38,7 +38,7 @@ export function Projects() {
 
         <GlassCard className="h-full flex flex-col items-center justify-center border-dashed border-2 border-foreground/10 group p-12">
           <div className="mb-8 p-6 rounded-full bg-foreground/5">
-            <Loader2 size={48} className="text-foreground/20" />
+            <Loader2 size={48} className="text-foreground/20 animate-spin" />
           </div>
           
           <h3 className="text-2xl font-black mb-2 tracking-tight italic">Coming Soon</h3>

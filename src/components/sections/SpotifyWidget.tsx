@@ -37,7 +37,7 @@ export function SpotifyWidget() {
   if (loading) return null;
 
   return (
-    <section className="px-6 py-10 max-w-7xl mx-auto w-full">
+    <section className="px-6 py-6 max-w-7xl mx-auto w-full">
       <GlassCard className="max-w-md ml-0 flex items-center gap-6 group">
         <div className="relative w-20 h-20 flex-shrink-0">
           {data?.albumImageUrl ? (

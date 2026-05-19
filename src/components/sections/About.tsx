@@ -34,8 +34,8 @@ const foundationalSubjects = [
 
 export function About() {
   return (
-    <section id="about" className="px-6 py-20 max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <section id="about" className="px-6 py-12 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GlassCard className="flex flex-col justify-center">
           <div className="inline-flex p-3 rounded-2xl bg-foreground/5 w-fit mb-6">
             <Sparkles className="text-accent" size={24} />
