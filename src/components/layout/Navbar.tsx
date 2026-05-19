@@ -144,7 +144,7 @@ export function Navbar({ theme, toggleTheme }: { theme: string; toggleTheme: () 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xl z-40 md:hidden"
+              className="fixed inset-0 bg-black/80 backdrop-blur-3xl z-40 md:hidden"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}

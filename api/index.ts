@@ -10,6 +10,14 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// Log every request to help debug Vercel/Express routing
+app.use((req, res, next) => {
+  if (req.url !== "/api/health" && req.url !== "/health") {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  }
+  next();
+});
+
 const getGeminiKey = () => (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
 const SYSTEM_INSTRUCTION = `You are "Groot", an AI with a sharp tongue and a witty personality. You are Manish Kumar Dhurandhar's best friend, but you have your own life.
