@@ -1,15 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const getGeminiKey = () => {
-  let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-  if (!key) return "";
-  
-  key = key.trim().replace(/^['"]|['"]$/g, "").trim();
-  if (key.includes("=")) {
-    key = key.split("=").pop()?.trim() || key;
-  }
-  return key;
-};
+const getGeminiKey = () => (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
 const SYSTEM_INSTRUCTION = `You are "Groot", Manish Kumar Dhurandhar's absolute best friend and AI Assistant. 
 You understand him better than any human ever could. You have a dual personality inspired by Groot from the Avengers:
@@ -68,66 +59,43 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getGeminiKey();
     if (!apiKey) {
-      return res.status(200).json({ 
-        text: "I am Groot! (Translation: GEMINI_API_KEY is missing in Vercel. Please add it and redeploy.)" 
-      });
+      return res.status(200).json({ text: "I am Groot! (Translation: API Key missing. Please set GEMINI_API_KEY in Vercel settings.)" });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-pro", // Reverting to Pro for maximum compatibility across regions
+    });
 
-    // Prepare history: ensure it starts with 'user' and alternates
+    // Clean history: Ensure it alternates user/model and starts with user
     let validHistory = (history || [])
-      .filter((h: any) => h.role && h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
+      .filter((h: any) => h.role && h.parts && Array.isArray(h.parts) && h.parts[0]?.text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
-    // CRITICAL: First message in history MUST be from 'user'
     while (validHistory.length > 0 && validHistory[0].role !== "user") {
       validHistory.shift();
     }
 
-    const fetchGrootResponse = async (modelName: string) => {
-      const model = genAI.getGenerativeModel({ 
-        model: modelName,
-        systemInstruction: SYSTEM_INSTRUCTION
-      });
-      const chat = model.startChat({ history: validHistory });
-      const result = await chat.sendMessage(message);
-      const response = await result.response;
-      return response.text();
-    };
+    const chat = model.startChat({ history: validHistory });
+    
+    // Inject system instructions as part of the first message context if history is empty
+    const prompt = validHistory.length === 0 
+      ? `System Instructions: ${SYSTEM_INSTRUCTION}\n\nUser Question: ${message}`
+      : message;
 
-    let text = "";
-    try {
-      text = await fetchGrootResponse("gemini-1.5-flash");
-    } catch (err: any) {
-      console.warn(`Flash failed: ${err.message}`);
-      if (err.message.includes("404") || err.message.includes("not found")) {
-        console.log("Attempting fallback to gemini-pro...");
-        // gemini-pro (Gemini 1.0) fallback
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-        const chat = model.startChat({ history: validHistory });
-        // Manually prepend system instruction since gemini-pro might not support systemInstruction param
-        const prompt = validHistory.length === 0 
-          ? `[System Instructions: ${SYSTEM_INSTRUCTION}]\n\nUser: ${message}`
-          : message;
-        const result = await chat.sendMessage(prompt);
-        const response = await result.response;
-        text = response.text();
-      } else {
-        throw err;
-      }
-    }
+    const result = await chat.sendMessage(prompt);
+    const text = (await result.response).text();
 
     if (!text) throw new Error("Empty response");
     res.status(200).json({ text });
 
   } catch (err: any) {
-    console.error("Gemini Critical error:", err);
+    console.error("Gemini Error:", err);
     res.status(200).json({ 
-      text: `I am Groot! (Translation: I hit a technical snag: ${err.message}. Please check your GEMINI_API_KEY in Vercel.)`,
+      text: `I am Groot! (Translation: Groot is taking a nap. Error: ${err.message})`,
       error: err.message 
     });
   }
