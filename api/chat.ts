@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const getGeminiKey = () => {
   let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
@@ -68,52 +68,67 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getGeminiKey();
     if (!apiKey) {
-      return res.status(200).json({ text: "I am Groot! (Translation: GEMINI_API_KEY is missing. Please add it to Vercel Environment Variables.)" });
+      return res.status(200).json({ 
+        text: "I am Groot! (Translation: GEMINI_API_KEY is missing in Vercel. Please add it and redeploy.)" 
+      });
     }
 
-    const ai = new GoogleGenAI({
-      apiKey: apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-    // We use gemini-3-flash-preview as per the gemini-api skill recommendation
-    const modelName = "gemini-3-flash-preview";
-
-    // Format history according to the @google/genai SDK (which uses contents array)
-    const contents = (history || [])
-      .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
+    // Prepare history: ensure it starts with 'user' and alternates
+    let validHistory = (history || [])
+      .filter((h: any) => h.role && h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
-    // In @google/genai, we can use generateContent with the full history + new message
-    contents.push({
-      role: "user",
-      parts: [{ text: String(message) }]
-    });
+    // CRITICAL: First message in history MUST be from 'user'
+    while (validHistory.length > 0 && validHistory[0].role !== "user") {
+      validHistory.shift();
+    }
 
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: contents,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-      },
-    });
+    const fetchGrootResponse = async (modelName: string) => {
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        systemInstruction: SYSTEM_INSTRUCTION
+      });
+      const chat = model.startChat({ history: validHistory });
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      return response.text();
+    };
 
-    const text = response.text;
-    if (!text) throw new Error("Empty response from Gemini");
+    let text = "";
+    try {
+      text = await fetchGrootResponse("gemini-1.5-flash");
+    } catch (err: any) {
+      console.warn(`Flash failed: ${err.message}`);
+      if (err.message.includes("404") || err.message.includes("not found")) {
+        console.log("Attempting fallback to gemini-pro...");
+        // gemini-pro (Gemini 1.0) fallback
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const chat = model.startChat({ history: validHistory });
+        // Manually prepend system instruction since gemini-pro might not support systemInstruction param
+        const prompt = validHistory.length === 0 
+          ? `[System Instructions: ${SYSTEM_INSTRUCTION}]\n\nUser: ${message}`
+          : message;
+        const result = await chat.sendMessage(prompt);
+        const response = await result.response;
+        text = response.text();
+      } else {
+        throw err;
+      }
+    }
 
+    if (!text) throw new Error("Empty response");
     res.status(200).json({ text });
+
   } catch (err: any) {
-    console.error("Gemini Critical Error:", err);
+    console.error("Gemini Critical error:", err);
     res.status(200).json({ 
-      text: `I am Groot! (Translation: I hit a technical snag: ${err.message})`,
-      error: err.message
+      text: `I am Groot! (Translation: I hit a technical snag: ${err.message}. Please check your GEMINI_API_KEY in Vercel.)`,
+      error: err.message 
     });
   }
 }
