@@ -77,14 +77,14 @@ export default async function handler(req: any, res: any) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     // Validate and clean history for the SDK
     const validHistory = (history || [])
-      .filter((h: any) => h.parts && h.parts[0] && h.parts[0].text)
+      .filter((h: any) => h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.parts[0].text }]
+        parts: [{ text: String(h.parts[0].text) }]
       }));
 
     const chat = model.startChat({ history: validHistory });
@@ -105,9 +105,11 @@ export default async function handler(req: any, res: any) {
     res.status(200).json({ text });
   } catch (err: any) {
     console.error("Gemini Critical Error:", err);
+    // Explicitly show the error message so the user can debug Vercel environment variables
+    const detailedError = err.message || "Unknown error";
     res.status(200).json({ 
-      text: "I am Groot! (Translation: My brain is currently fried by Vercel's limits or a missing API key. Please check the logs!)",
-      error: err.message 
+      text: `I am Groot! (Translation: Connection failed. Error: ${detailedError}. Please ensure GEMINI_API_KEY is correctly set in Vercel settings.)`,
+      error: detailedError
     });
   }
 }
