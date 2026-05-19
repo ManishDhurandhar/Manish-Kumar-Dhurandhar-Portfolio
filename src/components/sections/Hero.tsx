@@ -24,9 +24,9 @@ export function Hero() {
     <section id="home" className="min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
+          initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <motion.div
             initial={{ opacity: 0 }}
@@ -67,14 +67,14 @@ export function Hero() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, ease: "easeOut" }}
           className="flex justify-center lg:justify-end mt-12 lg:mt-0"
         >
           <div className="relative group">
-            <div className="absolute -inset-4 bg-gradient-to-tr from-accent/30 to-transparent blur-2xl rounded-full opacity-50 group-hover:opacity-70 transition-opacity" />
-            <div className="w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-[3rem] overflow-hidden glass p-4 rotate-3 group-hover:rotate-0 transition-transform duration-700">
+            <div className="absolute -inset-4 bg-gradient-to-tr from-accent/20 to-transparent blur-2xl rounded-full opacity-50 transition-opacity" />
+            <div className="w-56 h-56 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-[3rem] overflow-hidden glass p-4 transition-transform duration-500">
               <img 
                 src="/input_file_1.png" 
                 alt="Manish Avatar" 
@@ -85,21 +85,17 @@ export function Hero() {
                 referrerPolicy="no-referrer"
               />
             </div>
-            {/* Floating badges */}
-            <motion.div 
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            {/* Badges */}
+            <div 
               className="absolute -top-4 -right-4 glass p-4 rounded-2xl shadow-xl font-bold italic"
             >
               SSTC '28
-            </motion.div>
-            <motion.div 
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            </div>
+            <div 
               className="absolute -bottom-4 -left-4 glass p-4 rounded-2xl shadow-xl font-bold"
             >
               CSE
-            </motion.div>
+            </div>
           </div>
         </motion.div>
       </div>

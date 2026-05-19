@@ -15,7 +15,7 @@ export function Projects() {
             <img 
               src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800&h=600" 
               alt="Portfolio Website" 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8" />
           </div>
@@ -27,34 +27,28 @@ export function Projects() {
             <p className="text-brand-muted text-sm leading-relaxed mb-6 font-medium">
               A high-performance portfolio architected with React 18 and Vite. Features hardware-accelerated animations via Motion, a sassy Gemini-integrated AI core, and low-latency auditory data streaming through Spotify's SDK.
             </p>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full glass flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-full">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Live Site</span>
               </div>
-              <span className="text-xs font-bold uppercase tracking-widest flex items-center">Live Site</span>
             </div>
           </div>
         </GlassCard>
 
         <GlassCard className="h-full flex flex-col items-center justify-center border-dashed border-2 border-foreground/10 group p-12">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-            className="mb-8 p-6 rounded-full bg-foreground/5"
-          >
+          <div className="mb-8 p-6 rounded-full bg-foreground/5">
             <Loader2 size={48} className="text-foreground/20" />
-          </motion.div>
+          </div>
           
           <h3 className="text-2xl font-black mb-2 tracking-tight italic">Coming Soon</h3>
           <p className="text-brand-muted font-medium mb-8 text-center text-sm">Expect greatness. Or atleast something better than my last excuse. Delivering soon.</p>
           
           <div className="flex gap-2">
             {[1, 2, 3].map((i) => (
-              <motion.div
+              <div
                 key={i}
-                animate={{ opacity: [0.2, 1, 0.2] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                className="w-2 h-2 rounded-full bg-foreground"
+                className="w-2 h-2 rounded-full bg-foreground/20"
               />
             ))}
           </div>

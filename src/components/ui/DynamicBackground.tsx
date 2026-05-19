@@ -7,28 +7,26 @@ export function DynamicBackground() {
       <div className="absolute inset-0 bg-background">
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.1, 0.15, 0.1],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/5 blur-[80px] will-change-[opacity]"
+        />
+        <motion.div
+          animate={{
+            opacity: [0.08, 0.12, 0.08],
           }}
           transition={{
             duration: 15,
             repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.15, 0.3, 0.15],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
+            ease: "linear",
             delay: 2,
           }}
-          className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-accent/10 blur-[120px]"
+          className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-accent/5 blur-[80px] will-change-[opacity]"
         />
         <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
       </div>

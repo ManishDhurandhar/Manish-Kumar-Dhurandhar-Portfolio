@@ -103,10 +103,10 @@ export function GrootChat() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="mb-4 w-[300px] sm:w-[340px] h-[75vh] max-h-[500px] glass rounded-[2rem] border border-foreground/10 shadow-2xl flex flex-col overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="mb-4 w-[300px] sm:w-[340px] h-[75vh] max-h-[500px] bg-background/95 backdrop-blur-2xl rounded-[2rem] border border-foreground/10 shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-5 border-b border-foreground/10 bg-foreground/5 flex items-center justify-between shrink-0">
@@ -156,8 +156,8 @@ export function GrootChat() {
                   <div className={cn(
                     "max-w-[85%] p-3 text-[13px] leading-relaxed",
                     msg.role === "user" 
-                      ? "bg-foreground text-background rounded-2xl rounded-tr-none" 
-                      : "bg-foreground/5 rounded-2xl rounded-tl-none font-medium"
+                      ? "bg-accent text-white rounded-2xl rounded-tr-none shadow-lg shadow-accent/20" 
+                      : "bg-foreground/5 border border-foreground/10 rounded-2xl rounded-tl-none font-medium"
                   )}>
                     {msg.parts[0].text}
                   </div>
@@ -178,7 +178,7 @@ export function GrootChat() {
             </div>
 
             {/* Input Bar - Sticky in flex container */}
-            <div className="p-4 bg-background/50 backdrop-blur-md border-t border-foreground/10 sticky bottom-0">
+            <div className="p-4 bg-background border-t border-foreground/10 sticky bottom-0">
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -191,7 +191,7 @@ export function GrootChat() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask Groot anything..."
-                  className="w-full glass rounded-2xl pl-10 pr-12 py-2.5 outline-none focus:border-accent/30 transition-colors text-xs"
+                  className="w-full bg-foreground/5 border border-foreground/10 rounded-2xl pl-10 pr-12 py-2.5 shadow-inner outline-none focus:border-accent/50 transition-colors text-xs text-foreground placeholder:text-foreground/40"
                 />
                 <Bot size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" />
                 <button 
@@ -210,16 +210,8 @@ export function GrootChat() {
 
       {/* Toggle Bubble */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        animate={!isOpen ? {
-          y: [0, -8, 0],
-        } : { y: 0 }}
-        transition={!isOpen ? {
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut"
-        } : { duration: 0.3 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-500",

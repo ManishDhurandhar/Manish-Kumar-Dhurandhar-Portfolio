@@ -94,12 +94,12 @@ export function Footer() {
           <div className="w-12 h-0.5 bg-accent/20 mx-auto mt-6 rounded-full" />
         </motion.div>
 
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
           {/* Contact Info */}
           <div>
             <h2 className="text-4xl font-black tracking-tighter mb-6">Let's Connect</h2>
             <p className="text-brand-muted font-medium mb-10 leading-relaxed max-w-md">
-              I'm open to freelance work, job opportunities, and collaborations. Resume available on demand. Reach out to me!
+              I'm open to freelance work, job opportunities, and collaborations. Reach out to me!
             </p>
             
             <div className="space-y-6">
@@ -139,7 +139,7 @@ export function Footer() {
                 ))}
               </div>
               <p className="text-accent font-mono text-[10px] uppercase tracking-[0.2em]">
-                Resume available on demand. Reach Out :
+                Reach Out :
               </p>
             </div>
           </div>
@@ -199,31 +199,32 @@ export function Footer() {
           </GlassCard>
         </div>
 
+        {/* Pro Tip Section - Centered below Form */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-20 text-center"
+        >
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-2 flex items-center gap-3">
+              <span className="w-8 h-[1px] bg-accent/30" /> Pro Tip <span className="w-8 h-[1px] bg-accent/30" />
+            </span>
+            <p className="text-sm md:text-base font-bold text-foreground/80 transition-colors max-w-xl">
+              Before you leave, say hi to Groot — my AI chatbot who understands me better than most humans. 
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent("open-groot"))}
+                className="text-accent underline decoration-accent/30 underline-offset-4 ml-1 hover:text-accent/80 transition-colors cursor-pointer inline-block"
+              >
+                Click to chat with Groot!
+              </button>
+            </p>
+          </div>
+        </motion.div>
+
         {/* Footer Bottom */}
         <div className="w-full pt-10 border-t border-white/5 flex flex-col items-center gap-8 md:flex-row md:justify-between">
           <div className="flex flex-col items-center md:items-start gap-4">
-             <motion.div 
-               initial={{ opacity: 0, x: -20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               className="mb-2"
-             >
-               <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-1 flex items-center gap-2">
-                   <span className="w-8 h-[1px] bg-accent/30" /> Pro Tip
-                 </span>
-                 <p className="text-xs font-bold text-foreground/60 transition-colors max-w-xs md:max-w-sm">
-                   Before you leave, say hi to Groot — my AI chatbot who understands me better than most humans. 
-                   <button 
-                     onClick={() => window.dispatchEvent(new CustomEvent("open-groot"))}
-                     className="text-accent underline decoration-accent/30 underline-offset-4 ml-1 hover:text-accent/80 transition-colors cursor-pointer inline-block"
-                   >
-                     Click to chat with Groot!
-                   </button>
-                 </p>
-               </div>
-             </motion.div>
-
              <div className="bg-foreground/5 border border-foreground/10 px-6 py-4 rounded-[24px] flex flex-col items-start gap-1">
                 <p className="text-[10px] text-foreground/40 font-black uppercase tracking-widest leading-none">Total Views</p>
                 <p className="text-2xl font-black font-mono tracking-tighter text-foreground">

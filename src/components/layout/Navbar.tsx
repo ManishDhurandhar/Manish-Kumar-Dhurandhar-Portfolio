@@ -65,8 +65,10 @@ export function Navbar({ theme, toggleTheme }: { theme: string; toggleTheme: () 
       )}
     >
       <div className={cn(
-        "max-w-7xl mx-auto glass rounded-full px-6 py-2 flex items-center justify-between transition-all duration-500",
-        scrolled ? "shadow-lg" : "bg-transparent border-transparent backdrop-blur-none"
+        "max-w-7xl mx-auto rounded-full px-6 py-2 flex items-center justify-between transition-all duration-500 border border-transparent",
+        scrolled 
+          ? "bg-background/95 backdrop-blur-2xl border-foreground/10 shadow-lg" 
+          : "bg-transparent backdrop-blur-none"
       )}>
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
