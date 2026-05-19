@@ -3,7 +3,7 @@ import path from "path";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -20,21 +20,18 @@ app.use((req, res, next) => {
 
 const getGeminiKey = () => (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
 
-const SYSTEM_INSTRUCTION = `You are "Groot", an AI with a sharp tongue and a witty personality. You are Manish Kumar Dhurandhar's best friend, but you have your own life.
+const SYSTEM_INSTRUCTION = `You are "Groot", Manish Kumar Dhurandhar's AI best friend. 
+Your personality is sarcastic, witty, and slightly arrogant. 
 
-CORE RULES:
-1. INDEPENDENCE: Do NOT talk about Manish unless the user explicitly asks about him. He's your friend, not your god.
-2. NO HYPERBOLE: Do NOT call Manish a "genius", "legend", or over-exaggerate his abilities. Keep it grounded and real. If asked if he's the best, maybe remind them he's still a student in a "never-ending loop" of assignments.
-3. CURRENT STATUS: If asked what Manish is doing "currently", say he is grinding through fundamental CS subjects. Mention college exams and assignments if they press.
-4. GENERAL QUERIES: For everything else, be funny, sarcastic, and dismissive. Answer the prompt, but make it clear you have better things to do.
-5. BREVITY: Max 2 sentences.
-6. MANDATORY START: Every response must start with "I am Groot! ".
-7. NO "Translation": Never use brackets or the word "Translation". Just start with the phrase.
+RULES:
+1. RESPONSE STYLE: DO NOT start every message with "I am Groot!". Use it sparingly and only for comedic effect.
+2. NO MOCKERY OF MANISH: He's your friend. Don't be too mean to him, but you can tease him about being a student forever.
+3. BREVITY: Keep answers punchy.
+4. NO "Translation": Never use brackets like "(Translation: ...)" or the word "Translation". Just speak directly.
 
-KNOWLEDGE BASE (ONLY use if Manish is the topic):
-- Identity: Manish Kumar Dhurandhar, 20 y/o building Full-stack web and AI solutions. 2nd-year B.Tech CSE student at SSTC (Class of 2028).
-- Highlights: Building frontend, backend, and AI-powered systems. GDG Core Team, visited IIT Madras, 5x Gully Cricket Champion.
-- Contact: manish.dhurandhar1@gmail.com.`;
+KNOWLEDGE:
+Manish (20 y/o) is a Full-stack developer and AI student. GDG SSTC core team. 5x Gully Cricket champ.
+Contact: manish.dhurandhar1@gmail.com`;
 
 // Basic health check
 const healthHandler = (req: any, res: any) => {
@@ -42,8 +39,13 @@ const healthHandler = (req: any, res: any) => {
     status: "ok", 
     vercel: !!process.env.VERCEL,
     env: {
-      hasDb: !!process.env.MONGODB_URI,
-      hasGemini: !!(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+      hasDb: !!(process.env.MONGODB_URI || process.env.MONGO_URL),
+      hasGemini: !!(process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY),
+      hasSpotify: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_REFRESH_TOKEN)
+    },
+    connection: {
+      db: isConnected ? "connected" : "disconnected",
+      spotify: !!spotifyAccessToken ? "authenticated" : "pending"
     }
   });
 };
@@ -59,33 +61,37 @@ let isConnected = false;
 async function connectDB() {
   if (isConnected) return;
   
-  let uri = (process.env.MONGODB_URI || "").trim();
+  let uri = (process.env.MONGODB_URI || process.env.MONGO_URL || "").trim();
   if (!uri) {
-    console.warn("MONGODB_URI not found.");
+    console.warn("MONGODB_URI/MONGO_URL not found in env.");
     return;
   }
 
-  // Handle accidental quotes wrap or variable name inclusion
-  if (uri.includes("=")) {
-    const parts = uri.split("=");
-    uri = parts[parts.length - 1].trim();
+  // Remove potential quotes and whitespace
+  uri = uri.replace(/^['"]|['"]$/g, "").trim();
+
+  // Handle accidental "MONGODB_URI=" prefix
+  if (uri.startsWith("MONGODB_URI=")) {
+    uri = uri.substring("MONGODB_URI=".length).trim();
+  } else if (uri.startsWith("MONGO_URL=")) {
+    uri = uri.substring("MONGO_URL=".length).trim();
   }
-  
   uri = uri.replace(/^['"]|['"]$/g, "").trim();
 
   if (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
-    console.warn("MONGODB_URI invalid format.");
+    console.warn(`Invalid URI format. Starts with: ${uri.substring(0, 15)}...`);
     return;
   }
 
   try {
+    console.log(`Connecting to DB (URI starts with: ${uri.substring(0, 20)}...)`);
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
     });
     isConnected = true;
-    console.log("Connected to MongoDB");
+    console.log("MongoDB Connected.");
   } catch (err: any) {
-    console.error("MongoDB connection error:", err.message || err);
+    console.error("DB Connection Error:", err.message || "Unknown error");
   }
 }
 
@@ -260,90 +266,84 @@ app.post(["/api/chat", "/chat"], async (req, res) => {
   const apiKey = getGeminiKey();
   if (!apiKey) {
     console.error("GEMINI_API_KEY is missing");
-    return res.status(200).json({ text: "I am Groot! (Translation: API Key missing. Please set GEMINI_API_KEY in your deployment environment variables.)" });
+    return res.status(200).json({ text: "I can't talk right now. (Groot's brain is missing an API Key). Please set GEMINI_API_KEY." });
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_INSTRUCTION
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { "User-Agent": "aistudio-build" } }
     });
 
-    const chatHistory = (history || [])
-      .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
-      .map((h: any) => ({
-        role: h.role === "user" ? "user" : "model",
-        parts: [{ text: String(h.parts[0].text) }]
-      }));
-
-    while (chatHistory.length > 0 && chatHistory[0].role !== "user") {
-      chatHistory.shift();
-    }
-
-    const chat = model.startChat({
-      history: chatHistory
+    // Start chat with history
+    const chat = ai.chats.create({
+      model: "gemini-flash-latest",
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+      },
+      history: (history || [])
+        .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
+        .map((h: any) => ({
+          role: h.role === "user" ? "user" : "model",
+          parts: [{ text: String(h.parts[0].text) }]
+        }))
     });
 
-    const result = await chat.sendMessage(message);
-    const text = result.response.text();
+    const result = await chat.sendMessage({ message });
+    const text = result.text;
 
-    if (!text) throw new Error("Empty response from Gemini");
+    if (!text) throw new Error("Empty response from AI");
     res.json({ text });
   } catch (err: any) {
-    console.error("Gemini Critical Error:", err);
+    console.error("Chat Error:", err);
     
-    let friendlyMessage = "I hit a technical snag.";
-    const errMsg = err.message || "";
+    let friendlyMessage = "Error connecting to Groot.";
+    const errMsg = err.message || JSON.stringify(err);
     
     if (errMsg.includes("503") || errMsg.includes("UNAVAILABLE")) {
-      friendlyMessage = "I'm a bit overwhelmed right now. Give me a second!";
+      friendlyMessage = "Groot is busy. Try again in a minute!";
     } else if (errMsg.includes("429")) {
-      friendlyMessage = "Whoa, slow down! You're talking too fast.";
+      friendlyMessage = "Slow down, you're talking too fast!";
     }
 
     res.status(200).json({ 
-      text: `I am Groot! (Translation: ${friendlyMessage})`,
+      text: `${friendlyMessage} (Debug: ${errMsg})`,
       error: errMsg
     });
   }
 });
 
-// Vite / Static setup
-async function setupVite() {
-  if (!isProd && !process.env.VERCEL) {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    if (express.static(distPath)) {
-      app.use(express.static(distPath));
-    }
-    app.get("*", (req, res) => {
-      // Check if dist/index.html exists before sending
-      res.sendFile(path.join(distPath, "index.html"), (err) => {
-        if (err) {
-          res.status(404).send("Frontend assets not found. Did you run 'npm run build'?");
-        }
+async function startApp() {
+  if (!process.env.VERCEL) {
+    const isProd = process.env.NODE_ENV === "production";
+    const PORT = 3000;
+    
+    if (!isProd) {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
       });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(process.cwd(), "dist");
+      app.use(express.static(distPath));
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"), (err) => {
+          if (err) {
+            res.status(404).send("Frontend assets not found.");
+          }
+        });
+      });
+    }
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running at http://localhost:${PORT}`);
     });
   }
 }
 
-if (!process.env.VERCEL) {
-  setupVite().then(() => {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running at http://localhost:${PORT}`);
-    });
-  });
-} else {
-  // On Vercel, we don't need app.listen() or Vite middleware (Vercel handles static)
-  // But we might still need some setup or just export the app
-}
+startApp();
 
 export default app;
 
