@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 const getGeminiKey = () => {
   let key = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
@@ -68,73 +68,52 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = getGeminiKey();
     if (!apiKey) {
-      return res.status(200).json({ text: "I am Groot! (Translation: My API Key is missing. Please add GEMINI_API_KEY to your Vercel Environment Variables and redeploy.)" });
+      return res.status(200).json({ text: "I am Groot! (Translation: GEMINI_API_KEY is missing. Please add it to Vercel Environment Variables.)" });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    let validHistory = (history || [])
-      .filter((h: any) => h.parts && Array.isArray(h.parts) && h.parts[0] && h.parts[0].text)
+    const ai = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+
+    // We use gemini-3-flash-preview as per the gemini-api skill recommendation
+    const modelName = "gemini-3-flash-preview";
+
+    // Format history according to the @google/genai SDK (which uses contents array)
+    const contents = (history || [])
+      .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
       .map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: String(h.parts[0].text) }]
       }));
 
-    while (validHistory.length > 0 && validHistory[0].role !== "user") {
-      validHistory.shift();
-    }
+    // In @google/genai, we can use generateContent with the full history + new message
+    contents.push({
+      role: "user",
+      parts: [{ text: String(message) }]
+    });
 
-    const getModelResponse = async (name: string) => {
-      const model = genAI.getGenerativeModel({ 
-        model: name,
-        systemInstruction: SYSTEM_INSTRUCTION
-      });
-      const chat = model.startChat({ 
-        history: validHistory.map(h => ({
-          role: h.role,
-          parts: h.parts
-        }))
-      });
-      const result = await chat.sendMessage(message);
-      return (await result.response).text();
-    };
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: contents,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+      },
+    });
 
-    let text = "";
-    try {
-      text = await getModelResponse("gemini-1.5-flash");
-    } catch (firstErr: any) {
-      if (firstErr.message && (firstErr.message.includes("404") || firstErr.message.includes("not found"))) {
-        console.log("Gemini 1.5 Flash not found, falling back to gemini-pro");
-        try {
-          // gemini-pro (Gemini 1.0) doesn't always support systemInstruction in the same way in older SDKs
-          // but we'll try it
-          text = await getModelResponse("gemini-pro");
-        } catch (secondErr: any) {
-           throw secondErr;
-        }
-      } else {
-        throw firstErr;
-      }
-    }
-    
-    if (!text) throw new Error("Empty response");
+    const text = response.text;
+    if (!text) throw new Error("Empty response from Gemini");
 
     res.status(200).json({ text });
   } catch (err: any) {
-    console.error("Gemini Error:", err);
-    const detailedError = err.message || "Unknown error";
-    
-    // If we got a 404, let's try gemini-pro as a fallback internally or explain
-    if (detailedError.includes("404") || detailedError.includes("not found")) {
-       res.status(200).json({ 
-         text: `I am Groot! (Translation: I can't find the model "gemini-1.5-flash" in your region. This is likely a regional restriction or an older API key. Please check your Vercel logs for help.)`,
-         error: detailedError
-       });
-    } else {
-       res.status(200).json({ 
-         text: `I am Groot! (Translation: I hit a technical snag: ${detailedError})`,
-         error: detailedError
-       });
-    }
+    console.error("Gemini Critical Error:", err);
+    res.status(200).json({ 
+      text: `I am Groot! (Translation: I hit a technical snag: ${err.message})`,
+      error: err.message
+    });
   }
 }
