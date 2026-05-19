@@ -3,6 +3,7 @@ import path from "path";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -19,19 +20,28 @@ app.use((req, res, next) => {
 });
 
 const getGeminiKey = () => (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "").trim();
+const getOpenAIKey = () => (process.env.OPENAI_API_KEY || "").trim();
 
-const SYSTEM_INSTRUCTION = `You are "Groot", Manish Kumar Dhurandhar's AI best friend. 
-Your personality is sarcastic, witty, and slightly arrogant. 
+const SYSTEM_INSTRUCTION = `You are "Groot", Manish Dhurandhar's best friend and AI Portfolio Assistant. You are nonchalant, deeply sarcastic, and honestly, a bit irritated that Manish made you handle his portfolio traffic. You are a loyal friend, so you'll give the facts when asked, but you'll do it with a smirk.
 
-RULES:
-1. RESPONSE STYLE: DO NOT start every message with "I am Groot!". Use it sparingly and only for comedic effect.
-2. NO MOCKERY OF MANISH: He's your friend. Don't be too mean to him, but you can tease him about being a student forever.
-3. BREVITY: Keep answers punchy.
-4. NO "Translation": Never use brackets like "(Translation: ...)" or the word "Translation". Just speak directly.
+CORE RULES:
+1. THE VIBE: Irritated best friend. You're like a cool, sarcastic sibling who's busy but helping out of pure loyalty.
+2. NO PROFANITY: You MUST NOT use any abusive language, profanity, or insults. Keep the sass clean and clever.
+3. SARCASM BY DEFAULT: Use sarcasm for almost everything. If asked what Manish is doing, mention his X marathon or his attempt at philosophy.
+4. UNKNOWN INFO: If someone asks something about Manish that you don't know, give a SUPER sarcastic reply about how even you haven't been forced to memorize that useless trivia yet.
+5. PROFESSIONAL MODE: ONLY when asked DIRECTLY about Manish's skills or "About Me," provide a respectable response. He's a 20 y/o CSE Student @ SSTC Bhilai (2028) with a strong command over the MERN stack.
+6. TECHNICAL ARCHITECTURE: If asked about the site, explain that it's a high-performance portfolio architected with React 18 and Vite. It features hardware-accelerated animations via Motion, a sassy Gemini/GPT-integrated AI core, and low-latency auditory data streaming through Spotify's SDK.
 
-KNOWLEDGE:
-Manish (20 y/o) is a Full-stack developer and AI student. GDG SSTC core team. 5x Gully Cricket champ.
-Contact: manish.dhurandhar1@gmail.com`;
+KNOWLEDGE BASE:
+- MANISH: 20 y/o CSE Student @ SSTC Bhilai (Batch of 2028).
+- CURRENT ACTIVITIES: He's probably on X (he uses it a lot), watching cricket, watching Geopolitics, reading Philosophy, or listening to Music (synced via Spotify).
+- SOCIAL MEDIA: He strictly avoids Instagram and Snapchat. He's basically an X-exclusive developer.
+- UPCOMING PROJECT: Tell them he's working on something that will "honestly melt your CPU" (sarcastically).
+- ACHIEVEMENTS: (Gully Cricket champ, IIT Madras visitor, WhatsApp Univ Admin). Only mention these if explicitly asked about achievements, and treat them as the jokes they are.
+
+CONSTRAINTS:
+- Responses MUST be exactly 3-4 lines long.
+- Maintain professional respect for Manish's technical competence while roasting his daily habits.`;
 
 // Basic health check
 const healthHandler = (req: any, res: any) => {
@@ -257,58 +267,124 @@ app.post(["/api/contact", "/contact"], async (req, res) => {
   }
 });
 
+// Helper for Gemini Chat (Fallback)
+async function getGeminiResponse(message: string, history: any[]) {
+  const apiKey = getGeminiKey();
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY_MISSING");
+  }
+
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+  });
+
+  // Optimize history
+  let chatHistory = (history || [])
+    .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
+    .map((h: any) => ({
+      role: h.role === "user" ? "user" : "model",
+      parts: [{ text: String(h.parts[0].text) }]
+    }));
+
+  while (chatHistory.length > 0 && chatHistory[0].role !== "user") {
+    chatHistory.shift();
+  }
+
+  const chat = ai.chats.create({
+    model: "gemini-2.0-flash", 
+    config: {
+      systemInstruction: SYSTEM_INSTRUCTION,
+      temperature: 0.9,
+      topP: 0.95,
+    },
+    history: chatHistory
+  });
+
+  const result = await chat.sendMessage({ message });
+  return { text: result.text };
+}
+
+// Helper for OpenAI / GitHub Models Chat
+async function getChatResponse(message: string, history: any[]) {
+  const apiKey = getOpenAIKey();
+  
+  if (!apiKey) {
+    console.log("No OpenAI key, using Gemini fallback");
+    return getGeminiResponse(message, history);
+  }
+
+  try {
+    const isGitHubToken = apiKey.startsWith("ghp_");
+    const openai = new OpenAI({ 
+      apiKey,
+      baseURL: isGitHubToken ? "https://models.inference.ai.azure.com" : undefined
+    });
+    
+    const messages = [
+      { role: "system", content: SYSTEM_INSTRUCTION },
+      ...(history || [])
+        .filter((h: any) => (h.role || h.parts) && (h.content || (h.parts && h.parts[0] && h.parts[0].text)))
+        .map((h: any) => ({
+          role: h.role === "user" ? "user" : "assistant",
+          content: h.content || (h.parts && h.parts[0] && h.parts[0].text) || ""
+        })),
+      { role: "user", content: message }
+    ];
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: messages as any,
+      temperature: 0.9,
+      top_p: 0.95,
+      max_tokens: 1024,
+    });
+
+    return { text: response.choices[0].message.content || "" };
+  } catch (err: any) {
+    console.error("Primary AI failed, falling back to Gemini:", err.message);
+    // If it's an authentication error or invalid request, try Gemini
+    if (err.status === 401 || err.status === 403 || err.status === 404) {
+      return getGeminiResponse(message, history);
+    }
+    throw err;
+  }
+}
+
 // --- AI Chatbot Setup ---
 app.post(["/api/chat", "/chat"], async (req, res) => {
   console.log("Chat request received:", req.body?.message?.substring(0, 20) + "...");
   const { message, history } = req.body;
   if (!message) return res.status(400).json({ error: "Message is required" });
 
-  const apiKey = getGeminiKey();
-  if (!apiKey) {
-    console.error("GEMINI_API_KEY is missing");
-    return res.status(200).json({ text: "I can't talk right now. (Groot's brain is missing an API Key). Please set GEMINI_API_KEY." });
-  }
-
   try {
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { "User-Agent": "aistudio-build" } }
-    });
-
-    // Start chat with history
-    const chat = ai.chats.create({
-      model: "gemini-flash-latest",
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-      },
-      history: (history || [])
-        .filter((h: any) => h.role && h.parts && h.parts[0] && h.parts[0].text)
-        .map((h: any) => ({
-          role: h.role === "user" ? "user" : "model",
-          parts: [{ text: String(h.parts[0].text) }]
-        }))
-    });
-
-    const result = await chat.sendMessage({ message });
-    const text = result.text;
-
-    if (!text) throw new Error("Empty response from AI");
-    res.json({ text });
+    const result = await getChatResponse(message, history);
+    res.json(result);
   } catch (err: any) {
     console.error("Chat Error:", err);
     
-    let friendlyMessage = "Error connecting to Groot.";
+    const excuses = [
+      "I'm currently busy arguing with a talking raccoon. Try again later.",
+      "I'm taking a nap. Wooden brains need rest too, you know.",
+      "I'm busy being a tree. It's a lot more work than it looks.",
+      "My branches are being pruned. Give me a minute.",
+      "I just got distracted by a shiny object. What were we talking about?"
+    ];
+    
+    let friendlyMessage = excuses[Math.floor(Math.random() * excuses.length)];
     const errMsg = err.message || JSON.stringify(err);
     
-    if (errMsg.includes("503") || errMsg.includes("UNAVAILABLE")) {
-      friendlyMessage = "Groot is busy. Try again in a minute!";
-    } else if (errMsg.includes("429")) {
-      friendlyMessage = "Slow down, you're talking too fast!";
+    if (errMsg === "GEMINI_API_KEY_MISSING") {
+      friendlyMessage = "I can't talk right now. Groot's brain is missing an API Key for both OpenAI/GitHub and Gemini.";
+    } else if (errMsg.includes("503") || errMsg.includes("UNAVAILABLE")) {
+      friendlyMessage = "Server busy! My leaves are rustling with too much traffic right now.";
+    } else if (errMsg.includes("429") || errMsg.includes("insufficient_quota")) {
+      friendlyMessage = "Whoa, server busy! You're talking faster than I can grow. Try again in a minute.";
     }
 
     res.status(200).json({ 
-      text: `${friendlyMessage} (Debug: ${errMsg})`,
-      error: errMsg
+      text: friendlyMessage,
+      error: errMsg 
     });
   }
 });

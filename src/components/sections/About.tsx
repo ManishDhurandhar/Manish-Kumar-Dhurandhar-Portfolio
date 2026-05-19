@@ -17,6 +17,7 @@ const skills = [
   { name: "MongoDB Atlas", icon: "MA" },
   { name: "Vercel", icon: "V" },
   { name: "Gemini API", icon: "AI" },
+  { name: "OpenAI API", icon: "OA" },
   { name: "GitHub", icon: "GH" },
   { name: "Figma", icon: "F" },
 ];

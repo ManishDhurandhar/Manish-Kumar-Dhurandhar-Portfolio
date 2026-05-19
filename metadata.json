@@ -1,6 +1,6 @@
 {
   "name": "Manish Kumar Dhurandhar Portfolio",
-  "description": "Modern, responsive portfolio for Manish Kumar Dhurandhar, featuring Groot AI - a specialized Gemini-powered assistant, real-time Spotify integration, and fluid glassmorphism design.",
+  "description": "High-performance React 18 portfolio for Manish Kumar Dhurandhar, featuring hardware-accelerated animations, a sassy dual-AI (ChatGPT & Gemini) integrated core, and real-time Spotify data streaming.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

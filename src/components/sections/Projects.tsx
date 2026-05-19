@@ -25,7 +25,7 @@ export function Projects() {
               <span className="text-[10px] font-bold px-2 py-1 glass rounded-full uppercase tracking-widest text-brand-muted">React + Vite</span>
             </div>
             <p className="text-brand-muted text-sm leading-relaxed mb-6 font-medium">
-              A high-performance portfolio architected with React 18 and Vite. Features hardware-accelerated animations via Motion, a sassy Gemini-integrated AI core, and low-latency auditory data streaming through Spotify's SDK.
+              A high-performance portfolio architected with React 18 and Vite. Features hardware-accelerated animations via Motion, a sassy dual-AI core integrated with OpenAI and Gemini, and low-latency auditory data streaming through Spotify's SDK.
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-full">
