@@ -1,27 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": "node_modules/@google/generative-ai/**"
-      }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "server.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/chat", "destination": "/api/chat.ts" },
+    { "source": "/api/views", "destination": "/api/views.ts" },
+    { "source": "/api/spotify/now-playing", "destination": "/api/spotify-now-playing.ts" },
+    { "source": "/api/contact", "destination": "/api/contact.ts" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

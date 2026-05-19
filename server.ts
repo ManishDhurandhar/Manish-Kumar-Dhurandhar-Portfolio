@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
@@ -10,6 +9,18 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// Basic health check
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    vercel: !!process.env.VERCEL,
+    env: {
+      hasDb: !!process.env.MONGODB_URI,
+      hasGemini: !!process.env.GEMINI_API_KEY || !!process.env.NEXT_PUBLIC_GEMINI_API_KEY
+    }
+  });
+});
 
 const isProd = process.env.NODE_ENV === "production";
 const PORT = 3000;
@@ -293,7 +304,8 @@ app.post("/api/chat", async (req, res) => {
 
 // Vite / Static setup
 async function setupVite() {
-  if (!isProd) {
+  if (!isProd && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -301,9 +313,16 @@ async function setupVite() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    if (express.static(distPath)) {
+      app.use(express.static(distPath));
+    }
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      // Check if dist/index.html exists before sending
+      res.sendFile(path.join(distPath, "index.html"), (err) => {
+        if (err) {
+          res.status(404).send("Frontend assets not found. Did you run 'npm run build'?");
+        }
+      });
     });
   }
 }

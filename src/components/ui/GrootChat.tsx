@@ -62,11 +62,29 @@ export function GrootChat() {
         }),
       });
 
-      const data = await response.json();
-      if (data.text) {
-        setMessages((prev) => [...prev, { role: "model", parts: [{ text: data.text }] }]);
+      const contentType = response.headers.get("content-type");
+      if (!response.ok) {
+        let errorMsg = `Server error (${response.status})`;
+        if (contentType && contentType.includes("application/json")) {
+           const errData = await response.json();
+           errorMsg = errData.error || errorMsg;
+        } else {
+           const text = await response.text();
+           console.error("Non-JSON error response:", text);
+           if (text.includes("A server error")) errorMsg = "Vercel Server Error (check logs)";
+        }
+        throw new Error(errorMsg);
+      }
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.text) {
+          setMessages((prev) => [...prev, { role: "model", parts: [{ text: data.text }] }]);
+        } else {
+          throw new Error(data.error || "Failed to get response");
+        }
       } else {
-        throw new Error(data.error || "Failed to get response");
+        throw new Error("Received non-JSON response from server");
       }
     } catch (err: any) {
       console.error("Chat Error:", err);
